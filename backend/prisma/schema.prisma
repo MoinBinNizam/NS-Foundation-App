@@ -1,0 +1,118 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./ns-foundation.db"
+}
+
+// 1. Global System Settings (Admin Configurable)
+model SystemSettings {
+  id                Int      @id @default(1)
+  sharePrice        Float    @default(500)
+  penaltyPerShare   Float    @default(20)
+  deadlineDay       Int      @default(15)
+  exitDeductionRate Float    @default(9.99)
+  targetBatch       String   @default("NS 12")
+  cycleStartDate    DateTime @default(dbgenerated("'2024-01-01'"))
+  cycleEndDate      DateTime @default(dbgenerated("'2028-12-31'"))
+}
+
+// 2. Member Management
+model User {
+  id               Int      @id @default(autoincrement())
+  memberId         String   @unique
+  name             String
+  email            String   @unique
+  mobile           String   @unique
+  password         String
+  batch            String   // Must be 'NS 12' per policy
+  role             String   @default("MEMBER") // ADMIN, ACCOUNTANT, MEMBER
+  isVerified       Boolean  @default(false)
+  joinedAt         DateTime @default(now())
+  status           String   @default("ACTIVE") // ACTIVE, SUSPENDED, LEFT
+  
+  // Relations
+  payments         Payment[]
+  receivedPayments Payment[] @relation("AccountantRelation") // If user is Accountant
+  wallet           Wallet?
+  exitLog          ExitLog?
+}
+
+// 3. Accountant Wallets (Virtual Accounts)
+model Wallet {
+  id            Int    @id @default(autoincrement())
+  userId        Int    @unique
+  user          User   @relation(fields: [userId], references: [id])
+  currentBalance Float  @default(0.0)
+  totalCollected Float  @default(0.0)
+  totalExpensed  Float  @default(0.0)
+  totalInvested  Float  @default(0.0)
+}
+
+// 4. Payment & Receipt System
+model Payment {
+  id               Int      @id @default(autoincrement())
+  memberId         Int
+  member           User     @relation(fields: [memberId], references: [id])
+  
+  accountantId     Int      // The accountant who confirms this
+  accountant       User     @relation("AccountantRelation", fields: [accountantId], references: [id])
+  
+  amount           Float
+  penaltyPaid      Float    @default(0.0)
+  monthsCovered    String   // JSON string of months, e.g., '["Jan", "Feb"]'
+  paymentMethod    String   // bKash, Nagad, Bank, Cash
+  receiptUrl       String?  // Image or PDF path
+  status           String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedAt       DateTime?
+  createdAt        DateTime @default(now())
+}
+
+// 5. Investment Module
+model InvestmentProject {
+  id             Int      @id @default(autoincrement())
+  name           String
+  organization   String
+  principal      Float
+  roiExpected    Float    // ROI %
+  startDate      DateTime
+  endDate        DateTime
+  status         String   @default("RUNNING") // RUNNING, MATURED, REINVESTED
+  receiptUrl     String?  // Proof of investment
+  
+  contributions  InvestmentContribution[]
+}
+
+model InvestmentContribution {
+  id           Int               @id @default(autoincrement())
+  projectId    Int
+  project      InvestmentProject @relation(fields: [projectId], references: [id])
+  accountantId Int
+  amount       Float             // Amount contributed by this accountant
+}
+
+// 6. Expense Module
+model Expense {
+  id           Int      @id @default(autoincrement())
+  amount       Float
+  description  String
+  accountantId Int
+  date         DateTime @default(now())
+}
+
+// 7. Exit Strategy (The 9.99% Rule)
+model ExitLog {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+  user             User     @relation(fields: [userId], references: [id])
+  totalPrincipal   Float
+  deductionAmount  Float    // 9.99%
+  refundAmount     Float    // Principal - Deduction
+  requestDate      DateTime @default(now())
+  completionDate   DateTime // 4 months from requestDate
+  isPaidFully      Boolean  @default(false)
+}
