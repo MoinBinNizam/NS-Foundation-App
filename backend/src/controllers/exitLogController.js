@@ -1,7 +1,6 @@
 // backend/src/controllers/exitLogController.js
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 
 /**
  * @route   POST /api/exit-logs

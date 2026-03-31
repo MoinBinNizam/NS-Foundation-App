@@ -1,7 +1,6 @@
 // backend/src/controllers/paymentController.js
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 
 // Helper to calculate penalty amount (based on penaltyRate and number of shares)
 // This is a simplified calculation; actual logic might be more complex.

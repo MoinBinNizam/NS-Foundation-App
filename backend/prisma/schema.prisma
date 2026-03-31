@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./ns-foundation.db"
 }
 
 // 1. Global System Settings (Admin Configurable)

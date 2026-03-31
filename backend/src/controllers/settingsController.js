@@ -1,7 +1,6 @@
 // backend/src/controllers/settingsController.js
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 
 // Helper function to get or create the single settings record
 async function getOrCreateSettings() {

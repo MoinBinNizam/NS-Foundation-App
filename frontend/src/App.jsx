@@ -1,11 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axiosInstance from './api/axiosInstance'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+  const [exitLogs, setExitLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchExitLogs = async () => {
+      try {
+        const response = await axiosInstance.get('/exit-logs');
+        setExitLogs(response.data);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch exit logs');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExitLogs();
+  }, []);
 
   return (
     <>
@@ -27,6 +46,29 @@ function App() {
         >
           Count is {count}
         </button>
+      </section>
+
+      <div className="ticks"></div>
+
+      <section id="exit-logs-section">
+        <h2>Exit Logs from Backend</h2>
+        {loading && <p>Loading exit logs...</p>}
+        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+        {!loading && !error && (
+          <div>
+            {exitLogs.length > 0 ? (
+              <ul>
+                {exitLogs.map((log) => (
+                  <li key={log.id}>
+                    ID: {log.id}, Member ID: {log.memberId}, Payout Status: {log.payoutStatus}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No exit logs found.</p>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="ticks"></div>
